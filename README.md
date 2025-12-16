@@ -36,6 +36,7 @@ This project focuses on **instant startup**, **snapshot-based restoration**, and
 - **Pre-initialized operating system environments** for near-instant startup
 - **State-based boot architecture** with snapshot save/load and restoration
 - Optional **GZIP-compressed state files** for reduced storage and bandwidth
+- Windows XP SaveState Only 80MB (27MB if using special Windows XP Mini Version) 
 - **RAM-drive–based emulator restore state**
 - No traditional hard-drive images
 - No fragmented disk files or split `.bin` image sets
