@@ -230,3 +230,40 @@ For testing and experimentation without local installation:
 > Large ISO files are hosted separately on **archive.org** to keep the repository lightweight.
 
 ---
+
+## 📝 Wishlist / To-Do
+
+The following features are planned or under exploration for future versions of this project:
+
+- **NE2000 Network Adapter Injection**
+  - Enable live injection of an emulated NE2000 Ethernet device
+  - Provide basic TCP/IP networking inside the running guest OS
+  - Allow networking to be enabled or disabled per snapshot
+
+- **Sound Blaster 16 Audio Support**
+  - Inject Sound Blaster 16 (SB16) audio emulation into the live environment
+  - Enable legacy audio support for early Windows 16bit applications
+  - Provide simple UI toggles for sound enable/disable
+
+- **Improved Snapshot Control**
+  - Simplified save/load workflow
+  - Clear snapshot metadata display (RAM size, video memory, OS type)
+  - Snapshot compatibility validation before restore
+
+- **Enhanced Frontend UX**
+  - Unified system launcher page
+  - One-click snapshot deployment
+  - Cleaner UI for ISO management and system selection
+
+These items are exploratory and will be implemented as emulator capabilities,
+browser APIs, and stability allow.
+
+
+
+This project is inspired by the **Archive.org Windows 3.1 live showcase**, expanded into a more modern, responsive system without:
+- DOSBox limitations
+- Long OS boot times
+- Buggy legacy emulation paths
+
+The goal is to provide a **modernized, snapshot-native browser desktop experience**.
+
