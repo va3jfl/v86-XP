@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>V86 Windows 7 Restoration</title>
+    <style>
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background-color: #1a1a1a;
+            color: #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #screen_container {
+            background-color: #000;
+            border: 2px solid #333;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            line-height: 0; 
+            margin-bottom: 10px;
+        }
+        #screen_container canvas {
+            display: block; 
+        }
+        #toolbar {
+            width: 800px;
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn:hover {
+            background-color: #444;
+        }
+        .btn:active {
+            background-color: #222;
+        }
+        #restore_file, #cdrom_file { display: none; }
+        #status_bar {
+            margin-top: 15px;
+            width: 800px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #progress {
+            background-color: #4CAF50;
+            height: 20px;
+            width: 0%;
+            transition: width 0.1s linear; 
+        }
+        #status_text { margin-top: 5px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+    <h2>V86 Windows 7 Restoration Host</h2>
+
+    <div id="toolbar">
+        <button id="btn_save" class="btn">💾 Save State</button>
+        <button id="btn_load" class="btn" onclick="document.getElementById('restore_file').click()">📂 Load State</button>
+        <div style="flex-grow: 1;"></div>
+        <button id="btn_mount" class="btn" onclick="document.getElementById('cdrom_file').click()">💿 Mount ISO</button>
+        <button id="btn_eject" class="btn">⏏️ Eject ISO</button>
+
+        <input type="file" id="restore_file">
+        <input type="file" id="cdrom_file" accept=".iso,.img,.bin">
+    </div>
+
+    <div id="screen_container">
+        <div style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
+        <canvas style="display: none"></canvas>
+    </div>
+
+    <div id="status_bar"><div id="progress"></div></div>
+    <div id="status_text">Initializing environment...</div>
+
+    <script src="build/libv86.js"></script>
+
+    <script>
+        "use strict";
+
+        // === SMART COMPRESSED CACHING LOADER ===
+        async function loadStateWithCache(url, progressBar, statusText) {
+            const cacheName = 'v86-win7-snapshots-v1';
+            
+            // 1. Feature Detection
+            const supportsCache = 'caches' in window;
+            const supportsDecompression = 'DecompressionStream' in window;
+
+            // Check Cache First (We cache the UNCOMPRESSED version for speed)
+            if (supportsCache) {
+                try {
+                    const cache = await caches.open(cacheName);
+                    // We map the .gz URL to a 'virtual' uncompressed key in the cache
+                    const cacheKey = url.replace('.gz', ''); 
+                    const cachedResponse = await cache.match(cacheKey);
+
+                    if (cachedResponse) {
+                        console.log("Loading uncompressed state from cache...");
+                        statusText.innerText = "Loading from local cache (Instant)...";
+                        progressBar.style.width = "100%";
+                        return await cachedResponse.arrayBuffer();
+                    }
+                } catch (e) {
+                    console.warn("Cache access failed (HTTP/Private Mode).");
+                }
+            }
+
+            // 2. Download the GZIP file
+            console.log("Downloading compressed state...");
+            statusText.innerText = "Downloading compressed state file...";
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+
+                const contentLength = response.headers.get('content-length');
+                const total = parseInt(contentLength, 10);
+                let loaded = 0;
+
+                const reader = response.body.getReader();
+                const chunks = [];
+
+                // Read the compressed stream
+                while(true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                    loaded += value.length;
+                    
+                    if (total) {
+                        const percent = Math.round((loaded / total) * 100);
+                        progressBar.style.width = percent + "%";
+                        statusText.innerText = `Downloading (GZIP): ${percent}%`;
+                    } else {
+                        const mb = (loaded / (1024 * 1024)).toFixed(1);
+                        statusText.innerText = `Downloading (GZIP): ${mb} MB...`;
+                    }
+                }
+
+                // Create compressed blob
+                const compressedBlob = new Blob(chunks);
+
+                // 3. Decompress on the fly
+                statusText.innerText = "Decompressing state...";
+                let uncompressedBuffer;
+
+                if (supportsDecompression) {
+                    // Native Browser Decompression (Very Fast)
+                    const ds = new DecompressionStream('gzip');
+                    const stream = compressedBlob.stream().pipeThrough(ds);
+                    const decompressedResponse = new Response(stream);
+                    uncompressedBuffer = await decompressedResponse.arrayBuffer();
+                } else {
+                    throw new Error("Browser does not support native GZIP decompression.");
+                }
+
+                // 4. Save UNCOMPRESSED buffer to cache
+                if (supportsCache) {
+                    try {
+                        const cache = await caches.open(cacheName);
+                        // Save as the base name (removing .gz) so next time we hit the cache
+                        const cacheKey = url.replace('.gz', '');
+                        // Create a response object to store
+                        const headers = new Headers({ 'Content-Length': uncompressedBuffer.byteLength });
+                        await cache.put(cacheKey, new Response(uncompressedBuffer, { headers }));
+                        console.log("Uncompressed state saved to cache.");
+                    } catch (e) {
+                        console.warn("Cache write failed (Quota?):", e);
+                    }
+                }
+
+                return uncompressedBuffer;
+
+            } catch (err) {
+                statusText.innerText = "Error loading: " + err.message;
+                progressBar.style.backgroundColor = "#ff5555";
+                throw err;
+            }
+        }
+
+        window.onload = async function() {
+            const statusText = document.getElementById("status_text");
+            const progressBar = document.getElementById("progress");
+
+            const PRESETS = {
+                memory: 512 * 1024 * 1024,
+                vga_memory: 32 * 1024 * 1024,
+                bios_path: "bios/seabios.bin",
+                vga_bios_path: "bios/vgabios.bin",
+                wasm_path: "build/v86.wasm",
+                // CHANGED: Pointing to the GZ file
+                snapshot_url: "7.bin.gz" 
+            };
+
+            // --- STEP 1: LOAD & DECOMPRESS STATE ---
+            let stateBuffer;
+            try {
+                stateBuffer = await loadStateWithCache(PRESETS.snapshot_url, progressBar, statusText);
+            } catch (e) {
+                console.error(e);
+                return; 
+            }
+
+            // --- STEP 2: START EMULATOR ---
+            statusText.innerText = "Launching V86 Emulator...";
+
+            var emulator = new V86({
+                wasm_path: PRESETS.wasm_path,
+                memory_size: PRESETS.memory,
+                vga_memory_size: PRESETS.vga_memory,
+                screen_container: document.getElementById("screen_container"),
+                initial_state: { buffer: stateBuffer }, // Pass the uncompressed buffer
+                bios: { url: PRESETS.bios_path },
+                vga_bios: { url: PRESETS.vga_bios_path },
+                autostart: true,
+                network_relay_url: null,
+                acpi: true, 
+            });
+
+            // --- MOUSE LOCK ---
+            document.getElementById("screen_container").addEventListener("mousedown", function() {
+                emulator.lock_mouse();
+            });
+
+            // --- SAVE STATE ---
+            document.getElementById("btn_save").onclick = async function() {
+                statusText.innerText = "Generating state file... (Please Wait)";
+                progressBar.style.width = "100%";
+                progressBar.style.backgroundColor = "#ff9800"; 
+
+                await new Promise(r => setTimeout(r, 50));
+
+                try {
+                    const new_state = await emulator.save_state();
+                    const blob = new Blob([new_state], { type: "application/octet-stream" });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "v86-state.bin";
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    
+                    statusText.innerText = "State saved successfully.";
+                    progressBar.style.width = "0%";
+                    progressBar.style.backgroundColor = "#4CAF50"; 
+                    emulator.lock_mouse();
+                } catch(e) {
+                    console.error(e);
+                    statusText.innerText = "Error saving state.";
+                }
+            };
+
+            // --- LOAD STATE ---
+            document.getElementById("restore_file").onchange = function() {
+                const file = this.files[0];
+                if (!file) return;
+
+                const filereader = new FileReader();
+                filereader.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        progressBar.style.width = percent + "%";
+                        statusText.innerText = `Reading save file: ${percent}%`;
+                    }
+                };
+
+                filereader.onload = async function(e) {
+                    const buffer = e.target.result;
+                    statusText.innerText = "Restoring emulator state...";
+                    try {
+                        await emulator.restore_state(buffer);
+                        statusText.innerText = "State restored successfully!";
+                        progressBar.style.width = "0%"; 
+                        emulator.lock_mouse(); 
+                    } catch(err) {
+                        statusText.innerText = "Error restoring state: " + err;
+                        console.error(err);
+                        progressBar.style.backgroundColor = "#ff5555";
+                    }
+                };
+                filereader.readAsArrayBuffer(file);
+                this.value = ""; 
+            };
+
+            // --- CD-ROM MOUNT ---
+            document.getElementById("cdrom_file").onchange = function() {
+                const file = this.files[0];
+                if (!file) return;
+
+                statusText.innerText = "Reading ISO file...";
+                const filereader = new FileReader();
+                filereader.onprogress = function(e) {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        progressBar.style.width = percent + "%";
+                        statusText.innerText = `Loading ISO: ${percent}%`;
+                    }
+                };
+                filereader.onload = async function(e) {
+                    statusText.innerText = "Mounting ISO...";
+                    try {
+                        const buffer = new Uint8Array(e.target.result);
+                        await emulator.set_cdrom(buffer);
+                        statusText.innerText = `ISO Mounted: ${file.name}`;
+                        progressBar.style.width = "0%";
+                    } catch(err) {
+                        statusText.innerText = "Error mounting ISO: " + err;
+                        console.error(err);
+                    }
+                };
+                filereader.readAsArrayBuffer(file);
+                this.value = ""; 
+                emulator.lock_mouse();
+            };
+
+            // --- CD-ROM EJECT ---
+            document.getElementById("btn_eject").onclick = function() {
+                try {
+                    emulator.eject_cdrom();
+                    statusText.innerText = "CD-ROM Ejected.";
+                } catch(e) {
+                    statusText.innerText = "Error ejecting ISO.";
+                    console.error(e);
+                }
+                emulator.lock_mouse();
+            };
+
+            emulator.add_listener("emulator-ready", function() {
+                console.log("V86: Core ready.");
+                statusText.innerText = "Core Ready. Restoring State...";
+            });
+
+            emulator.add_listener("emulator-started", function() {
+                progressBar.style.width = "0%";
+                statusText.innerText = "System Running: Windows 7";
+                if (emulator.audio_adapter) emulator.audio_adapter.init(); 
+            });
+
+            window.onerror = function(msg, url, line) {
+                statusText.innerText = `Error: ${msg}`;
+                statusText.style.color = "#ff5555";
+                progressBar.style.backgroundColor = "#ff5555";
+                console.error(msg);
+            };
+        };
+    </script>
+</body>
+</html>
