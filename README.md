@@ -10,22 +10,22 @@ This project focuses on **instant startup**, **snapshot-based restoration**, and
   <tr>
     <td align="center">
       <img src="Screenshots/WinXP.png" width="420"><br>
-      <sub>Windows XP Desktop</sub>
+      <sub>Windows XP Desktop SaveState 80 MB</sub>
     </td>
     <td align="center">
       <img src="Screenshots/SimCity.png" width="420"><br>
-      <sub>SimCity</sub>
+      <sub>SimCity 2000 SaveState 111 MB</sub>
     </td>
   </tr>
   
   <tr>
     <td align="center">
       <img src="Screenshots/win7.png" width="420"><br>
-      <sub>Windows 7</sub>
+      <sub>Windows 7 SaveState 95 MB</sub>
     </td>
     <td align="center">
       <img src="Screenshots/xpmini.png" width="420"><br>
-      <sub>Mini Windows Xp 24 MB</sub>
+      <sub>Mini Windows Xp 24 MB Live ISO</sub>
     </td>
   </tr>
 </table>
