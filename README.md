@@ -4,11 +4,28 @@ A fast, state-based Windows XP environment running entirely in the browser using
 
 This project focuses on **instant startup**, **snapshot-based restoration**, and **minimal file footprint**, avoiding traditional disk-image complexity.
 
-## Screenshots
+<h2>Screenshots</h2>
 
-![Windows XP Desktop](Screenshots/WinXP.png)
-![SimCity](Screenshots/SimCity.png)
-![Windows 7](Screenshots/win7.png)
+<table>
+  <tr>
+    <td align="center">
+      <img src="Screenshots/WinXP.png" width="420"><br>
+      <sub>Windows XP Desktop</sub>
+    </td>
+    <td align="center">
+      <img src="Screenshots/SimCity.png" width="420"><br>
+      <sub>SimCity</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="Screenshots/win7.png" width="420"><br>
+      <sub>Windows 7</sub>
+    </td>
+    <td></td>
+  </tr>
+</table>
+
 
 ---
 
