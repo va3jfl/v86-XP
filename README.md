@@ -40,6 +40,7 @@ This project focuses on **instant startup**, **snapshot-based restoration**, and
 - **RAM-drive–based emulator restore state**
 - No traditional hard-drive images
 - No fragmented disk files or split `.bin` image sets
+- Basic Experimental Windows 7 Support (Unstable with Loading And Unloading ISO Files)
 
 ---
 
