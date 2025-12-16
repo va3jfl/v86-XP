@@ -30,6 +30,42 @@ This project focuses on **instant startup**, **snapshot-based restoration**, and
   </tr>
 </table>
 
+## Live Demos
+
+Below are live, in-browser demonstrations of different Windows system states running under v86.
+
+### Windows XP – Standard SaveState
+A full Windows XP environment using a standard SaveState.  
+Approximate download size: **~80 MB**
+
+**Demo:**  
+http://typeright.social/VirtualXP/
+
+---
+
+### Windows 7 – Experimental SaveState
+An experimental Windows 7 SaveState running in the browser.  
+Approximate download size: **~90 MB**
+
+**Demo:**  
+http://typeright.social/VirtualXP/win7/
+
+---
+
+### Mini Windows XP – Experimental Live ISO
+A highly stripped-down Mini Windows XP live ISO designed for minimal size.  
+Approximate download size: **~24 MB**
+
+**Demo:**  
+http://typeright.social/VirtualXP/MiniXP/
+
+---
+
+### Updates & New System States
+
+These demo links are actively evolving.  
+Check back often for new system states, updated SaveStates, and additional ISO selections as they become available.
+
 
 ---
 
