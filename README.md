@@ -17,12 +17,16 @@ This project focuses on **instant startup**, **snapshot-based restoration**, and
       <sub>SimCity</sub>
     </td>
   </tr>
+  
   <tr>
     <td align="center">
       <img src="Screenshots/win7.png" width="420"><br>
       <sub>Windows 7</sub>
     </td>
-    <td></td>
+    <td align="center">
+      <img src="Screenshots/xpmini.png" width="420"><br>
+      <sub>Mini Windows Xp 24 MB</sub>
+    </td>
   </tr>
 </table>
 
